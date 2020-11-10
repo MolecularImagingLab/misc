@@ -1,8 +1,22 @@
 #!/usr/bin/env python
-# coding: utf-8
 
-# In[15]:
-
+def main_menu():
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print("Welcome to Qwik Search 1.0.")
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    print("Qwik Search allows you to optimize your search strategy.")
+    while True:
+        option = input("Would you like to create a search (enter: 1) or compare searches (enter: 2)?")
+        if option == "1":
+            break
+        elif option == "2":
+            break
+        else:
+            continue
+    if option == "1":
+        option_1()
+    elif option == "2":
+        option_2()
 
 def generate_links():
     
@@ -16,11 +30,7 @@ def generate_links():
     """Compatible with the PubMed Database only."""
 
     # Define keywords
-    
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print("Welcome to Qwik Search 1.0.")
-    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    print("Qwik Search allows you to optimize your search strategy.")
+
     print("This version of Qwik Search supports two (2) sets of keywords.\n")
     print("Please enter keywords WITHOUT spaces separated by a semicolon (;) (representing 'OR') for each SET of keywords.")
     print("For example, entering 'Dopamine;Dopamine Agents' returns the terms: Dopamine OR Dopamine Agents.\n")
@@ -96,10 +106,6 @@ def generate_links():
     print("URLs generated...")
     return save_path
 
-
-# In[15]:
-
-
 def get_citations(save_path):
     
     import os, sys
@@ -109,7 +115,7 @@ def get_citations(save_path):
     from bs4 import BeautifulSoup as bs
     from urllib.parse import urlparse, quote
     
-    file_name = os.path.join(save_path + ".csv")
+    file_name = os.path.join(save_path + "_search_summary.csv")
     df = pd.read_csv(file_name,index_col=0)
     notebook = []
     for link in df['URL']:
@@ -145,10 +151,6 @@ def get_citations(save_path):
     df_notebook.to_csv(notebook_name)
     return save_path, df, notebook
 
-
-# In[17]:
-
-
 def count_duplicates(save_path, df, notebook):
     
     import os, sys
@@ -175,10 +177,6 @@ def count_duplicates(save_path, df, notebook):
     df2.to_csv(file_name2)
     return save_path, df, df2
 
-
-# In[18]:
-
-
 def plot_search(save_path, df, df2):
     
     import os, sys
@@ -197,16 +195,54 @@ def plot_search(save_path, df, df2):
     print("Data has been saved in", save_path)
     print("Thank you for using Qwik Search. Goodbye!")
     exit()
+    
+def percent_overlap():
+    
+    """Takes _notebook.csv files generated from search and calculates % of overlap between search strategies"""
 
+    import os, sys
+    import pandas as pd
+    
+    print("Please enter the file path separated by '/' for each search that was generated.")
+    print("For example: /home/name/Downloads/filename.csv")
+    search1_name = input("What is the file path for the first search?")
+    search2_name = input("What is the file path for the second search?")
 
-# In[19]:
+    search1 = []
+    df3 = pd.read_csv(search1_name, index_col=0)
+    for d in df3.columns:
+        for PMID in df3[str(d)]:
+            search1.append(PMID)
+    search2 = []
+    df4 = pd.read_csv(search2_name, index_col=0)
+    for d in df4.columns:
+        for PMID in df4[str(d)]:
+            search2.append(PMID)
 
+    setA = set(search1)
+    setB = set(search2)
 
-def main():
+    overlap = setA & setB
+    universe = setA | setB
+
+    result1 = float(len(overlap)) / len(setA) *100 # % Search 1 in search 2
+    result2 = float(len(overlap)) / len(setB) *100 # % Search 2 in search 1
+    result3 = float(len(overlap)) / len(universe) * 100 # overall overlap (middle portion in venn diagram)
+    print("% Search 1 in search 2:",result1)
+    print("% Search 2 in search 1:", result2)
+    print("Overall % overlap:", result3)
+
+def option_1():
     save_path = generate_links()
     save_path, df, notebook = get_citations(save_path)
     save_path, df, df2 = count_duplicates(save_path, df, notebook)
     plot_search(save_path, df, df2)
+    
+def option_2():
+    percent_overlap()
+
+def main():
+    main_menu()
 
 if __name__ == "__main__":
     # execute only if run as a script
