@@ -160,7 +160,7 @@ def mace_calculate(dataframe, start_col):
     final_out = pd.concat([final_out, phys_negl_hold], axis=1)
     # Intrafamilial MACE score
     intrafam_frame = pd.concat([sex_ab_fam, pva_mace, nvea_mace, phys_ab_mace, wipv_mace, viol_sib_mace, emot_negl_mace, phys_negl_mace], axis=1)
-    intrafam_mace = intrafam_frame.sum(axis=1, skipna=True).to_numpy(dtype='float32')
+    intrafam_mace = intrafam_frame.sum(axis=1, skipna=True)
     intrafam_count = intrafam_frame.count(axis=1).to_numpy()
     for item in range(0,len(intrafam_mace)):
         if intrafam_count[item] < min_acc_intrafam:
@@ -181,10 +181,41 @@ def mace_calculate(dataframe, start_col):
     final_mace = final_out.iloc[:,selected]
     final_sum = final_out.iloc[:, [i for i in list(final_out.columns) if i not in selected]]
     out1 = final_sum
-    q = [1,20,39,58,77,96,115,134,153,172]
+    q = np.array([1,20,39,58,77,96,115,134,153,172])
     mace_multi_age = None
     mace_sum_age = None
     # provide MACE_SUM and MACE_MULTI for all years - provided valid categories >= min_acc_total
+    for i in range(0,17):
+        k = q+i # Check indexing
+        hold = final_mace.iloc[:,k]
+        lnt = hold.count(axis=1).to_numpy()
+        mace_age = hold.sum(axis=1, skipna=True)
+        for item in range(0,len(lnt)):
+            if lnt[item] < min_acc_total:
+                mace_age[item] = np.nan
+        mace_multi_age = pd.concat([mace_multi_age, mace_age], axis=1) #might need numpy32int
+        hold = final_sum.iloc[:,k]
+        mace_age = hold.sum(axis=1, skipna=True)
+        for item in range(0,len(lnt)):
+            if lnt[item] < min_acc_total:
+                mace_age[item] = np.nan
+        mace_sum_age = pd.concat([mace_sum_age, mace_age], axis=1) #might need numpy32int
+    k = q+16 # Check indexing
+    hold = final_mace.iloc[:,k]
+    mace_multi_ever = hold.sum(axis=1, skipna=True)
+    lnt = hold.count(axis=1)
+    for item in range(0,len(lnt)):
+        if lnt[item] < min_acc_total:
+            mace_multi_ever[item] = np.nan
+    hold = final_sum.iloc[:,k]
+    mace_sum_ever = hold.sum(axis=1, skipna=True)
+    for item in range(0,len(lnt)):
+        if lnt[item] < min_acc_total:
+            mace_sum_ever[item] = np.nan
+    type_ever = pd.concat([sex_ab_sum, pva_sum, nvea_sum, phys_ab_sum, wipv_sum, viol_sib_sum, 
+                          peer_emot_sum, peer_phys_sum, emot_negl_sum, phys_negl_sum], axis=1)
+    final_frame = pd.concat([ever_hold.iloc[:,0], out1, mace_multi_age, mace_sum_age, mace_multi_ever,
+                            mace_sum_ever, type_ever], axis=1)
 
 """ Main function to process 52 question MACE, total of 988 items. """
 def mace_execute(dataframe, start_col):
@@ -196,4 +227,3 @@ def mace_execute(dataframe, start_col):
     else:
         mace_calculate(dataframe, start_col)
         print("Dataframe has 988 columns for scoring. Calculating...")
-
