@@ -2,44 +2,58 @@
 
 import pandas as pd
 import numpy as np
+import itertools as itls
 dataframe = pd.read_csv('/home/lauri/Documents/mace_sample.csv')
 
 """ Reverse item scoring. """
 def reverse_item_fx(dframe, indx):
     for i in range(-18,1):
         inx = indx+i
+        #print('~~~rev inx:',inx)
         dframe.iloc[:,inx] = abs(1-dframe.iloc[:,inx])
     return dframe
 
 """ Checks if number of missing values are acceptable based on cutoffs defined in mace_calculate(). """
-def mace_cutoff_fx(cnt, cutoff):
-    for item in range(0,len(cnt)):
-        if cnt[item] < cutoff:
-            cnt[item] = 0
+def mace_cutoff_fx(mace, cutoff):
+    for item in range(0,len(mace)):
+        if mace[item] < cutoff:
+            mace[item] = 0
         else:
-            cnt[item] = 1
-    return cnt
+            mace[item] = 1
+    return mace
 
 """ Mace item scoring. """
 def mace_age_fx(dframe, indx, cutoff, scoring, min_acceptable):
     out_mat = np.zeros([dframe.shape[0],19*2])
     df = pd.DataFrame(data=out_mat)
-    j = 0
-    for i in range(-18,1):    
-        j = -j +1
-        k = -j +19
+    #print('~~~~~scoring~~~~~',scoring)
+    for k,i in enumerate(range(-18,1), start=0): #for count, item
+        j = k
+        #print('j:',j)
+        k = j +19
+        #print('k:',k)
         inx = indx+i
-        hold = dataframe.iloc[:,inx]
+        #print('inx:',inx)
+        hold = dframe.iloc[:,inx]
         lnt = (hold.count(axis=1)).to_numpy()
+        #print('lnt:',lnt)
         cnt = (hold.sum(axis=1, skipna=True)).to_numpy(dtype='float32')
+        #print('cnt before:',cnt)
         for item in range(0,len(dframe.index)):
             if lnt[item] < min_acceptable:
                 cnt[item] = np.nan
+        final_cnt = cnt.copy()
         mace = mace_cutoff_fx(cnt, cutoff)
         qz = np.array2string(mace)
-        for c in cnt:
+        #print('mace:',qz)
+        #print('cnt after2:',cnt)
+        mace_sum = []
+        for c in final_cnt:
             c = int(c)
-            mace_sum = scoring[c] #c+1 in r-code
+            mace_sum.append(scoring[c]) #c+1 in r-code
+            #print('C:',c,'mace_sum:',mace_sum)
+        mace_sum = np.array(mace_sum)
+        #print('sum:',mace_sum)
         df.iloc[:,j] = mace
         df.iloc[:,k] = mace_sum
     return df
@@ -73,11 +87,11 @@ def mace_indices(): # index+1 in r-code
 """ MACE item response theory (IRT) values based on Teicher & Parigger (2015). """
 def mace_irt_values():
     sex_ab_scoring = np.array([0, 1.84063982566719, 3.57167393405874, 4.86193482048058, 6.05874975634753, 7.35545905210534, 8.67772952605267, 10])
-    pva_scoring = np.array([0, 2.5, 5, 7.5, 10])
+    pva_scoring = np.array([0, 2.51, 5, 7.5, 10])
     nvea_scoring = np.array([0, 1.57203586201709, 3.07318170239233, 4.30017268552622, 5.66888216594181, 7.74694728216119, 10])
     phys_ab_scoring = np.array([0, 1.97350025645546, 3.80610533906172, 5.07761998873815, 6.34283867353684, 8.10910025721665, 10])
     wipv_scoring = np.array([0, 2.16265962002852, 4.24162614623762, 6.04358509621965, 7.99291014858454, 10])
-    viol_sib_scoring = np.array([0, 2.5, 5, 7.5, 10])
+    viol_sib_scoring = np.array([0, 2.51, 5, 7.5, 10])
     peer_emot_scoring = np.array([0, 2.01491889140193, 3.94389919669921, 5.65181683198404, 7.76456257878893, 10])
     peer_phys_scoring = np.array([0, 2.31610945680412, 4.49115107318588, 6.18181081484338, 8.05096066393912, 10])
     emot_negl_scoring = np.array([0, 2.06604852199299, 4.06369282630551, 5.86280636891976, 7.89386012994807, 10])
@@ -86,7 +100,7 @@ def mace_irt_values():
                     'wipv_scoring':wipv_scoring, 'viol_sib_scoring':viol_sib_scoring, 'peer_emot_scoring':peer_emot_scoring, 
                     'peer_phys_scoring':peer_phys_scoring, 'emot_negl_scoring':emot_negl_scoring, 'phys_negl_scoring':phys_negl_scoring}
     for score in scoring_vals.keys():
-        scoring_vals[score] = np.round(scoring_vals[score])
+        scoring_vals[score] = np.round(scoring_vals[score], decimals=0)
     return scoring_vals
 
 """ MACE scoring function. """
@@ -154,7 +168,7 @@ def mace_calculate(dataframe, start_col):
     final_out = pd.concat([final_out, emot_negl_hold], axis=1)
     # Peer Physical Neglect Scores
     ever_hold2 = reverse_item_fx(ever_hold2, a['phys_negl_rev']) #ever_hold2<-ever_hold2
-    phys_negl_hold = mace_age_fx(ever_hold2,a['phys_negl_rev'],cutoffs[9],x['phys_negl_scoring'],min_acceptable[9]) 
+    phys_negl_hold = mace_age_fx(ever_hold2,a['phys_negl_indx'],cutoffs[9],x['phys_negl_scoring'],min_acceptable[9]) 
     phys_negl_mace = phys_negl_hold.iloc[:,18]
     phys_negl_sum = phys_negl_hold.iloc[:,37]
     final_out = pd.concat([final_out, phys_negl_hold], axis=1)
@@ -165,21 +179,11 @@ def mace_calculate(dataframe, start_col):
     for item in range(0,len(intrafam_mace)):
         if intrafam_count[item] < min_acc_intrafam:
             intrafam_mace[item] = np.nan
-    selected = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,38,39,40,
-                41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,76,77,78,
-                79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,114,115,
-                116,117,118,119,120,121,122,123,124,125,126,127,128,129,
-                130,131,132,152,153,154,155,156,157,158,159,160,161,162,
-                163,164,165,166,167,168,169,170,190,191,192,193,194,195,
-                196,197,198,199,200,201,202,203,204,205,206,207,208,228,
-                229,230,231,232,233,234,235,236,237,238,239,240,241,242,
-                243,244,245,246,247,267,268,269,270,271,272,273,274,275,
-                276,277,278,279,280,281,282,283,284,304,305,306,307,308,
-                309,310,311,312,313,314,315,316,317,318,319,320,321,322,
-                342,343,344,345,346,347,348,349,350,351,352,353,355,356,
-                357,358,359,360]       
+    selected = list(itls.chain(range(0,19), range(38,57), range(76,95), range(114,133),
+                              range(152,171), range(190,209), range(228,247), range(266,285),
+                              range(304,323), range(342,361)))
     final_mace = final_out.iloc[:,selected]
-    final_sum = final_out.iloc[:, [i for i in list(final_out.columns) if i not in selected]]
+    final_sum = final_out.drop(final_out.iloc[:,selected], axis=1)
     out1 = final_sum
     q = np.array([1,20,39,58,77,96,115,134,153,172])
     mace_multi_age = None
@@ -216,6 +220,7 @@ def mace_calculate(dataframe, start_col):
                           peer_emot_sum, peer_phys_sum, emot_negl_sum, phys_negl_sum], axis=1)
     final_frame = pd.concat([ever_hold.iloc[:,0], out1, mace_multi_age, mace_sum_age, mace_multi_ever,
                             mace_sum_ever, type_ever], axis=1)
+    return final_mace,final_sum
 
 """ Main function to process 52 question MACE, total of 988 items. """
 def mace_execute(dataframe, start_col):
@@ -225,5 +230,7 @@ def mace_execute(dataframe, start_col):
     if num_cols != 988:
         print("Dataframe has",num_cols,"columns for scoring. Only 988 columns valid for scoring.")
     else:
-        mace_calculate(dataframe, start_col)
+        output = mace_calculate(dataframe, start_col)
+        return output
         print("Dataframe has 988 columns for scoring. Calculating...")
+
