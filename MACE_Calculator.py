@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
+""" Import libraries. """
 import pandas as pd
 import numpy as np
 import itertools as itls
-dataframe = pd.read_csv('/home/lauri/Documents/mace_sample.csv')
 
 """ Reverse item scoring. """
 def reverse_item_fx(dframe, indx):
@@ -185,26 +185,28 @@ def mace_calculate(dataframe, start_col):
     final_mace = final_out.iloc[:,selected]
     final_sum = final_out.drop(final_out.iloc[:,selected], axis=1)
     out1 = final_sum
-    q = np.array([1,20,39,58,77,96,115,134,153,172])
+    q = np.array([0,19,38,57,76,95,114,133,152,171])
     mace_multi_age = None
     mace_sum_age = None
     # provide MACE_SUM and MACE_MULTI for all years - provided valid categories >= min_acc_total
-    for i in range(0,17):
-        k = q+i # Check indexing
+    for i in range(0,18):
+        k = q+i
+        #print(k)
         hold = final_mace.iloc[:,k]
         lnt = hold.count(axis=1).to_numpy()
         mace_age = hold.sum(axis=1, skipna=True)
         for item in range(0,len(lnt)):
             if lnt[item] < min_acc_total:
                 mace_age[item] = np.nan
-        mace_multi_age = pd.concat([mace_multi_age, mace_age], axis=1) #might need numpy32int
+        mace_multi_age = pd.concat([mace_multi_age, mace_age], axis=1)
         hold = final_sum.iloc[:,k]
         mace_age = hold.sum(axis=1, skipna=True)
         for item in range(0,len(lnt)):
             if lnt[item] < min_acc_total:
                 mace_age[item] = np.nan
-        mace_sum_age = pd.concat([mace_sum_age, mace_age], axis=1) #might need numpy32int
-    k = q+16 # Check indexing
+        mace_sum_age = pd.concat([mace_sum_age, mace_age], axis=1)
+    k = q+18   
+    #print(k)
     hold = final_mace.iloc[:,k]
     mace_multi_ever = hold.sum(axis=1, skipna=True)
     lnt = hold.count(axis=1)
@@ -219,18 +221,56 @@ def mace_calculate(dataframe, start_col):
     type_ever = pd.concat([sex_ab_sum, pva_sum, nvea_sum, phys_ab_sum, wipv_sum, viol_sib_sum, 
                           peer_emot_sum, peer_phys_sum, emot_negl_sum, phys_negl_sum], axis=1)
     final_frame = pd.concat([ever_hold.iloc[:,0], out1, mace_multi_age, mace_sum_age, mace_multi_ever,
-                            mace_sum_ever, type_ever], axis=1)
-    return final_mace,final_sum
+                            mace_sum_ever, type_ever, intrafam_mace], axis=1)
+    name_dict = ['Subject', 'MACE_SexAb_1', 'MACE_SexAb_2', 'MACE_SexAb_3', 'MACE_SexAb_4', 'MACE_SexAb_5', 'MACE_SexAb_6',
+                 'MACE_SexAb_7', 'MACE_SexAb_8', 'MACE_SexAb_9', 'MACE_SexAb_10', 'MACE_SexAb_11', 'MACE_SexAb_12', 'MACE_SexAb_13', 
+                 'MACE_SexAb_14', 'MACE_SexAb_15', 'MACE_SexAb_16', 'MACE_SexAb_17', 'MACE_SexAb_18', 'MACE_SexAb_EVER', 'MACE_PVA_1', 
+                 'MACE_PVA_2', 'MACE_PVA_3', 'MACE_PVA_4', 'MACE_PVA_5', 'MACE_PVA_6', 'MACE_PVA_7', 'MACE_PVA_8', 'MACE_PVA_9', 
+                 'MACE_PVA_10', 'MACE_PVA_11', 'MACE_PVA_12', 'MACE_PVA_13', 'MACE_PVA_14', 'MACE_PVA_15', 'MACE_PVA_16', 'MACE_PVA_17', 
+                 'MACE_PVA_18', 'MACE_PVA_EVER', 'MACE__NVEA_1', 'MACE_NVEA_2', 'MACE_NVEA_3', 'MACE_NVEA_4', 'MACE_NVEA_5', 'MACE_NVEA_6', 
+                 'MACE_NVEA_7', 'MACE_NVEA_8', 'MACE_NVEA_9', 'MACE_NVEA_10', 'MACE_NVEA_11', 'MACE_NVEA_12', 'MACE_NVEA_13', 'MACE_NVEA_14', 
+                 'MACE_NVEA_15', 'MACE_NVEA_16', 'MACE_NVEA_17', 'MACE_NVEA_18', 'MACE_NVEA_EVER', 'MACE_PPhysM_1', 'MACE_PPhysM_2', 'MACE_PPhys_3', 
+                 'MACE_PPhys_4', 'MACE_PPhys_5', 'MACE_PPhys_6', 'MACE_PPhys_7', 'MACE_PPhys_8', 'MACE_PPhys_9', 'MACE_PPhys_10', 'MACE_PPhys_11', 
+                 'MACE_PPhys_12', 'MACE_PPhys_13', 'MACE_PPhys_14', 'MACE_PPhys_15', 'MACE_PPhys_16', 'MACE_PPhys_17', 'MACE_PPhys_18', 'MACE_PPhys_EVER',
+                 'MACE_IPV_1', 'MACE_IPV_2', 'MACE_IPV_3', 'MACE_IPV_4', 'MACE_IPV_5', 'MACE_IPV_6', 'MACE_IPV_7', 'MACE_IPV_8', 'MACE_IPV_9', 
+                 'MACE_IPV_10', 'MACE_IPV_11', 'MACE_IPV_12', 'MACE_IPV_13', 'MACE_IPV_14', 'MACE_IPV_15', 'MACE_IPV_16', 'MACE_IPV_17', 'MACE_IPV_18', 
+                 'MACE_IPV_EVER', 'MACE_WSibA_1', 'MACE_WSibA_2', 'MACE_WSibA_3', 'MACE_WSibA_4', 'MACE_WSibA_5', 'MACE_WSibA_6', 'MACE_WSibA_7', 'MACE_WSibA_8',
+                 'MACE_WSibA_9', 'MACE_WSibA_10', 'MACE_WSibA_11', 'MACE_WSibA_12', 'MACE_WSibA_13', 'MACE_WSibA_14', 'MACE_WSibA_15', 'MACE_WSibA_16', 'MACE_WSibA_17', 
+                 'MACE_WSibA_18', 'MACE_WSibA_EVER', 'MACE_PeerVA_1', 'MACE_PeerVA_2', 'MACE_PeerVA_3', 'MACE_PeerVA_4', 'MACE_PeerVA_5', 'MACE_PeerVA_6', 'MACE_PeerVA_7', 
+                 'MACE_PeerVA_8', 'MACE_PeerVA_9', 'MACE_PeerVA_10', 'MACE_PeerVA_11', 'MACE_PeerVA_12', 'MACE_PeerVA_13', 'MACE_PeerVA_14', 'MACE_PeerVA_15', 'MACE_PeerVA_16', 
+                 'MACE_PeerVA_17', 'MACE_PeerVA_18', 'MACE_PeerVA_EVER', 'MACE_PeerPhys_1', 'MACE_PeerPhys_2', 'MACE_PeerPhys_3', 'MACE_PeerPhys_4', 'MACE_PeerPhys_5', 'MACE_PeerPhys_6', 
+                 'MACE_PeerPhys_7', 'MACE_PeerPhys_8', 'MACE_PeerPhys_9', 'MACE_PeerPhys_10', 'MACE_PeerPhys_11', 'MACE_PeerPhys_12', 'MACE_PeerPhys_13', 'MACE_PeerPhys_14', 'MACE_PeerPhys_15', 
+                 'MACE_PeerPhys_16', 'MACE_PeerPhys_17', 'MACE_PeerPhys_18', 'MACE_PeerPhys_EVER', 'MACE_EN_1', 'MACE_EN_2', 'MACE_EN_3', 'MACE_EN_4', 'MACE_EN_5', 'MACE_EN_6', 'MACE_EN_7', 
+                 'MACE_EN_8', 'MACE_EN_9', 'MACE_EN_10', 'MACE_EN_11', 'MACE_EN_12', 'MACE_EN_13', 'MACE_EN_14', 'MACE_EN_15', 'MACE_EN_16', 'MACE_EN_17', 'MACE_EN_18', 'MACE_EN_EVER', 
+                 'MACE_PN_1', 'MACE_PN_2', 'MACE_PN_3', 'MACE_PN_4', 'MACE_PN_5', 'MACE_PN_6', 'MACE_PN_7', 'MACE_PN_8', 'MACE_PN_9', 'MACE_PN_10', 'MACE_PN_11', 'MACE_PN_12', 'MACE_PN_13', 
+                 'MACE_PN_14', 'MACE_PN_15', 'MACE_PN_16', 'MACE_PN_17', 'MACE_PN_18', 'MACE_PN_EVER', 'MACE_MULT_1', 'MACE_MULT_2', 'MACE_MULT_3', 'MACE_MULT_4', 'MACE_MULT_5', 'MACE_MULT_6', 'MACE_MULT_7', 
+                 'MACE_MULT_8', 'MACE_MULT_9', 'MACE_MULT_10', 'MACE_MULT_11', 'MACE_MULT_12', 'MACE_MULT_13', 'MACE_MULT_14', 'MACE_MULT_15', 'MACE_MULT_16', 'MACE_MULT_17', 'MACE_MULT_18', 'MACE_SUM_1', 'MACE_SUM_2', 
+                 'MACE_SUM_3', 'MACE_SUM_4', 'MACE_SUM_5', 'MACE_SUM_6', 'MACE_SUM_7', 'MACE_SUM_8', 'MACE_SUM_9', 'MACE_SUM_10', 'MACE_SUM_11', 'MACE_SUM_12', 'MACE_SUM_13', 'MACE_SUM_14', 'MACE_SUM_15', 'MACE_SUM_16', 
+                 'MACE_SUM_17', 'MACE_SUM_18', 'MACE_MULT_EVER', 'MACE_SUM_EVER', 'MACE_SexAb_EVER', 'MACE_PVA_EVER', 'MACE_NVEA_EVER', 'MACE_PPhysM_EVER', 'MACE_IPV_EVER', 'MACE_WSibA_EVER', 'MACE_PeerVA_EVER', 'MACE_PeerPhysEVER', 
+                 'MACE_EN_EVER', 'MACE_PN_EVER', 'Intrafamalial_MACE']
+    final_frame.columns = name_dict
+    return final_frame
 
 """ Main function to process 52 question MACE, total of 988 items. """
 def mace_execute(dataframe, start_col):
-    start_col=start_col
     dataframe=dataframe
+    start_col=start_col
+    
     num_cols=len(dataframe.columns) - start_col
     if num_cols != 988:
         print("Dataframe has",num_cols,"columns for scoring. Only 988 columns valid for scoring.")
     else:
-        output = mace_calculate(dataframe, start_col)
-        return output
+        longform = mace_calculate(dataframe, start_col)
+        summary= longform.loc[:,['Subject','MACE_MULT_EVER','MACE_SUM_EVER', 'MACE_SexAb_EVER', 'MACE_PVA_EVER', 'MACE_NVEA_EVER', 'MACE_PPhysM_EVER', 
+                         'MACE_IPV_EVER', 'MACE_WSibA_EVER', 'MACE_PeerVA_EVER', 'MACE_PeerPhysEVER', 'MACE_EN_EVER', 'MACE_PN_EVER', 'Intrafamalial_MACE']]
+        return longform,summary
         print("Dataframe has 988 columns for scoring. Calculating...")
+
+""" This is an example of how to load the data and calculate the 52-item MACE scores. 
+Sample MACE scores can be obtained from: https://europepmc.org/articles/PMC4340880/bin/pone.0117423.s016.gz
+Many thanks to the authors for providing open source code to the science community: 
+Teicher, Martin H., and Angelika Parigger. "The ‘Maltreatment and Abuse Chronology of Exposure’(MACE) scale 
+for the retrospective assessment of abuse and neglect during development." PLoS one 10.2 (2015): e0117423."""
+dataframe = pd.read_csv('/path/to/file/mace_sample.csv')
+longform,summary = mace_execute(dataframe, start_col=2)
 
